@@ -113,6 +113,10 @@ export const SET_CONTRAST = Object.freeze({
 /* 2 is a V and 10 a thumbs-up: both set off iOS's camera Reactions (mobile/app.js says how to turn them off). */
 export const REACTION_ITEMS = Object.freeze(["2", "10"]);
 export const WARM_ITEM = "5";
+/* No glove on the camera: the number's picture beside it, to copy (the owner, 24 Oct: "we do not need the glove
+ * pictures ... just want the sign shown like the no-glove version"). ?look=glove still puts the glove on. */
+export const DEFAULT_LOOK = "plain";
+export const HOLD_NOTE = " For 10, give your thumbs-up a small twist.";
 export const SHARE = Object.freeze({ title: "ASL numbers practice", text: "Practice ASL numbers 1 to 10 with your phone's camera." });
 
 /* The pictures: the numbers' renders (research/numbers-2026-10-24/gloves/), each a right hand as it looks on the

@@ -38,7 +38,7 @@ import { SECOND_OPINION } from "../tutor/mix.js";
 import { createTracker } from "../js/core/tracker.js";
 import { MEDIAPIPE } from "../config.js";
 import { runTrialLoop } from "../js/core/trial-loop.js";
-import { pictureUrl, LETTERS, NOUN, NOUN_PLURAL, REACTION_ITEMS, WARM_ITEM, SHARE } from "../tutor/letters.js";
+import { pictureUrl, LETTERS, NOUN, NOUN_PLURAL, REACTION_ITEMS, WARM_ITEM, SHARE, DEFAULT_LOOK, HOLD_NOTE } from "../tutor/letters.js";
 import { replayRequest, loadReplay, createReplay } from "../js/core/replay.js";
 import { shapeDistance, DEFAULTS as COMMIT_DEFAULTS, MIN_PALM_EXIT_FACTOR } from "../tutor/commit.js";
 import { flattenRounded, DECIMALS, toPoints } from "../tutor/landmarks.js";
@@ -48,7 +48,7 @@ import { TUTOR_COMMIT_OPTS } from "../experiments/asl-tutor/engine.js";
 const $ = (s) => document.querySelector(s);
 const params = new URLSearchParams(location.search);
 const HAND = params.get("hand") === "left" ? "left" : "right";
-const LOOK = ["outline", "picture", "hand", "plain"].includes(params.get("look")) ? params.get("look") : "glove";
+const LOOK = ["glove", "outline", "picture", "hand", "plain"].includes(params.get("look")) ? params.get("look") : DEFAULT_LOOK;
 /* ?look=plain: the letter and its picture, nothing to fit the hand into; a miss is answered as in every look (asl-demo.js PLAIN). */
 const PLAIN = LOOK === "plain";
 if (PLAIN) document.documentElement.classList.add("look-plain");
@@ -180,7 +180,7 @@ async function renderWelcome() {
     : `Make each ${NOUN} with your ${HAND} hand. Your camera checks your handshape and shows you what to change, as you go.`;
   if (PLAIN) {
     $("#step-fit").innerHTML = `Copy the ${NOUN}'s picture with your <b>${HAND}</b> hand. The blue lines are your hand.`;
-    $("#step-hold").textContent = `Then hold still until the ring around the ${NOUN} fills.`;
+    $("#step-hold").textContent = `Then hold still until the ring around the ${NOUN} fills.${HOLD_NOTE}`;
   }
   const hero = $("#hero");
   // the page already shows the default letters' gloves (index.html); rebuilt only for other letters or the other hand

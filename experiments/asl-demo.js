@@ -32,7 +32,7 @@
 import { flattenRounded, DECIMALS } from "../tutor/landmarks.js";
 import { loadModel } from "../tutor/verifier.js";
 import { loadOpenFS } from "../tutor/openfs.js";
-import { LETTERS, pictureUrl, DEFAULT_ITEMS, NOUN, NOUN_PLURAL, USES_OPENFS, parseItems } from "../tutor/letters.js";
+import { LETTERS, pictureUrl, DEFAULT_ITEMS, NOUN, NOUN_PLURAL, USES_OPENFS, parseItems, DEFAULT_LOOK } from "../tutor/letters.js";
 import { MOTION_LETTERS } from "../tutor/motion.js";
 import { createEngine, TUTOR_COMMIT_OPTS } from "./asl-tutor/engine.js";
 import { mountTutor } from "./asl-tutor/ui.js";
@@ -149,7 +149,7 @@ const debugOn = params.get("debug") === "1";
  * letter's picture SCHEMATIZED to its clean outline (Indranil, 19 Oct: "more of a schematized outline (no details like
  * knuckles)", so a right hand's skeleton sits inside it); ?look=outline, the outline for every letter; ?look=picture,
  * the whole picture; ?look=hand, the outline of a real hand (experiments/asl-tutor/ghost.js). */
-const LOOK_STYLE = ["outline", "picture", "hand", "plain"].includes(params.get("look")) ? params.get("look") : "glove";
+const LOOK_STYLE = ["glove", "outline", "picture", "hand", "plain"].includes(params.get("look")) ? params.get("look") : DEFAULT_LOOK;
 /* ?look=plain (the phone version's version without a glove, 22 Oct; the owner: "the simple clean version where it shows
  * them the letter and they sign it ... none of the yellow feedback"; "i want the pose diagram on the hand"): nothing
  * drawn to fit the hand into and no live coaching -- the letter, its picture, the learner's own hand skeleton and the
