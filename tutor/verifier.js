@@ -218,9 +218,15 @@ export function loadModel(json) {
     }
     const tier = json.tiers?.[L];
     if (tier !== 1 && tier !== 2) fail(`letter ${L}: tier is ${show(tier)}, expected 1 or 2`);
+    // `beat` (optional; the numbers model has it, the letters' does not): classes the hand must look LESS like than
+    // the target, whatever the score says. The accept threshold is calibrated on the target's look-alikes and the
+    // background only, so a class outside those (an open 5, asked for 7) was never counted against it.
+    if (t.beat !== undefined && !(Array.isArray(t.beat) && t.beat.every((c) => typeof c === "string" && json.classes[c] && c !== L))) {
+      fail(`letter ${L}: beat must be a list of the model's other classes, got ${show(t.beat)}`);
+    }
     // Frozen: a threshold is a fitted number from the model file, not a knob
     // a later module gets to nudge at runtime.
-    thresholds[L] = Object.freeze({ accept: t.accept, reject: t.reject, gate: t.gate });
+    thresholds[L] = Object.freeze({ accept: t.accept, reject: t.reject, gate: t.gate, beat: Object.freeze([...(t.beat ?? [])]) });
     tiers[L] = tier;
   }
 
@@ -414,6 +420,11 @@ export function decide(model, z, target, opts) {
     rival = rivalThresholds !== undefined && d2buf[b] <= rivalThresholds.gate ? best : ATYPICAL;
   } else if (score >= th.accept) {
     outcome = "accept";
+    // ...unless the hand is more like a class the target must beat (`beat`): then that class is what it looks like.
+    for (const c of th.beat) {
+      const k = model.index[c];
+      if (llbuf[k] > llbuf[t] && (rival === null || llbuf[k] > llbuf[model.index[rival]])) { outcome = "reject"; rival = c; }
+    }
   } else if (score < th.reject) {
     outcome = "reject";
     rival = best;
