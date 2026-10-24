@@ -28,9 +28,24 @@
  *          palm-lengths from the index knuckle: on FSboard's Deaf signers an S reads 0.20 at the median, an A 0.51,
  *          an L 0.85; research/numbers-2026-10-24/thumb_measure.py) and pointing up (within T10_UP_DEG of straight up).
  *   motion the thumb swings: its direction turns through T10_TWIST_DEG and back (a twist), or its tip goes
- *          T10_SHAKE palm-lengths sideways and back (a shake). Either one counts; holding still does not. */
+ *          T10_SHAKE palm-lengths sideways and back (a shake). Either one counts; holding still does not.
+ *
+ * ELEVEN, TWELVE, FIFTEEN (the numbers build) are fingers that FLICK or BEND, over and over, while the hand stays put:
+ *   11  the index flicks up from under the thumb; middle, ring and pinky stay curled.
+ *   12  the index and middle fingers flick up together; ring and pinky stay curled.
+ *   15  a 5 (thumb out) whose four fingers bend down at the knuckles together.
+ *   shape  the fingers that do not move curled (at most FLICK_STILL: looser than CURL, since a curled finger next to
+ *          one flicking reads up to 1.35, and 1.49 for a moment as the flick goes by); for 15, the thumb out (T10_THUMB).
+ *   motion the moving fingers (11 the index, 12 index and middle, 15 all four) go from straight (all of them at least
+ *          FLICK_UP) to bent (all of them at most FLICK_DOWN; for 15, three of the four, as the pinky bends least) or
+ *          back at least FLICK_FLIPS times: up, down, up, or down, up, down. A finger that only wobbles between the
+ *          two (a tracking glitch, a curled finger turned with the hand) never counts.
+ *          Measured on Learn How to Sign's videos of 11, 12 and 15 (research/numbers-2026-10-24/FLICKS.md): the index
+ *          reads 1.1-1.3 under the thumb and 2.0-2.2 flicked up; 12's lower finger 1.3-1.6 and 2.1-2.5; 15's lowest
+ *          2.0-2.2 open, its third-lowest 1.35-1.46 bent (seen from the front). A curled index turned with a twisting
+ *          10 swings 0.46 but never reaches 1.75. */
 
-export const MOTION_LETTERS = Object.freeze(["J", "Z", "10"]);
+export const MOTION_LETTERS = Object.freeze(["J", "Z", "10", "11", "12", "15"]);
 export const EXT = 1.45;
 export const CURL = 1.3;
 export const WINDOW_MS = 3500;       // how far back from the hold to look for the movement
@@ -38,16 +53,20 @@ export const MIN_SHAPE_FRAMES = 6;
 export const J_DROP = 0.45, J_HOOK = 0.25;
 export const Z_WIDTH = 0.6, Z_DROP = 0.35, Z_REVERSALS = 2, Z_HYST = 0.15;
 export const T10_THUMB = 0.45, T10_UP_DEG = 60, T10_TWIST_DEG = 18, T10_TWIST_HYST_DEG = 7, T10_SHAKE = 0.3, T10_SHAKE_HYST = 0.1;
+export const FLICK_STILL = 1.5, FLICK_UP = 1.75, FLICK_DOWN = 1.6, FLICK_FLIPS = 2;
 /* The same numbers as one object: the engine takes it as an option, so a
  * replay of recorded trials can try other values (research/prolific-pilot-2026-09-28). */
 export const MOTION_DEFAULTS = Object.freeze({ WINDOW_MS, EXT, CURL, MIN_SHAPE_FRAMES, J_DROP, J_HOOK, Z_WIDTH, Z_DROP, Z_REVERSALS, Z_HYST,
-  T10_THUMB, T10_UP_DEG, T10_TWIST_DEG, T10_TWIST_HYST_DEG, T10_SHAKE, T10_SHAKE_HYST });
+  T10_THUMB, T10_UP_DEG, T10_TWIST_DEG, T10_TWIST_HYST_DEG, T10_SHAKE, T10_SHAKE_HYST, FLICK_STILL, FLICK_UP, FLICK_DOWN, FLICK_FLIPS });
 
 const FINGER = { index: [5, 8], middle: [9, 12], ring: [13, 16], pinky: [17, 20] };
 const SHAPE = {
   J: { out: ["pinky"], curled: ["index", "middle", "ring"], tip: 20 },
   Z: { out: ["index"], curled: ["middle", "ring", "pinky"], tip: 8 },
   10: { out: [], curled: ["index", "middle", "ring", "pinky"], tip: 4, thumbUp: true },
+  11: { out: [], curled: [], still: ["middle", "ring", "pinky"], flick: ["index"], track: "min", tip: 8 },
+  12: { out: [], curled: [], still: ["ring", "pinky"], flick: ["index", "middle"], track: "min", tip: 12 },
+  15: { out: [], curled: [], still: [], flick: ["index", "middle", "ring", "pinky"], track: "three", tip: 12, thumbOut: true },
 };
 /* The landmark each movement is drawn and measured with (experiments/asl-tutor/engine.js, motion-guide.js). */
 export const MOTION_TIP = Object.freeze(Object.fromEntries(Object.entries(SHAPE).map(([k, v]) => [k, v.tip])));
@@ -66,7 +85,23 @@ export function inShape(letter, flat, aspect, p = MOTION_DEFAULTS) {
   const s = SHAPE[letter];
   if (!s || !flat || flat.some((v) => !Number.isFinite(v))) return false;
   if (!(s.out.every((f) => extension(flat, f, aspect) >= p.EXT) && s.curled.every((f) => extension(flat, f, aspect) <= p.CURL))) return false;
+  if (s.still && !s.still.every((f) => extension(flat, f, aspect) <= p.FLICK_STILL)) return false;
+  if (s.thumbOut && !(thumbOut(flat, aspect) >= p.T10_THUMB)) return false;
   return !s.thumbUp || thumbUp(flat, aspect, p);
+}
+
+/* The thumb tip's distance from the index knuckle, in palm lengths: out of the fist (or the palm) when large. */
+function thumbOut(flat, aspect) {
+  const palm = dist(pt(flat, 0, aspect), pt(flat, 9, aspect));
+  return palm > 0 ? dist(pt(flat, 4, aspect), pt(flat, 5, aspect)) / palm : NaN;
+}
+
+/* 11, 12, 15: how far up the moving fingers are, a frame: [up, down]. Up is the lowest of them (all are straight when
+ * it is); down is the same for 11 and 12, and for 15 the second highest (three of the four are bent when it is: the
+ * pinky bends least, and often reads straight). */
+function flickTrack(s, flat, aspect) {
+  const e = s.flick.map((f) => extension(flat, f, aspect)).sort((a, b) => a - b);
+  return [e[0], s.track === "three" ? e[e.length - 2] : e[0]];
 }
 
 /* The thumb out of the fist and pointing up (TEN): far enough from the index knuckle, and its direction within
@@ -136,6 +171,19 @@ export function motionVerdict(letter, frames, aspect, p = MOTION_DEFAULTS) {
     const ok = drop >= p.J_DROP && hook >= p.J_HOOK;
     return { ok, reason: ok ? null : "motion", stats };
   }
+  if (s.flick) {
+    // up and down, over and over: how often the moving fingers go from straight (FLICK_UP) to bent (FLICK_DOWN) or back
+    const track = smooth(kept.map((f) => flickTrack(s, f.flat, aspect)), 3);
+    let state = 0, flips = 0;
+    for (const [up, down] of track) {
+      const now = up >= p.FLICK_UP ? 1 : down <= p.FLICK_DOWN ? -1 : state;
+      if (state && now !== state) flips++;
+      state = now;
+    }
+    Object.assign(stats, { top: +Math.max(...track.map((t) => t[0])).toFixed(3), bottom: +Math.min(...track.map((t) => t[1])).toFixed(3), flips });
+    const ok = flips >= p.FLICK_FLIPS;
+    return { ok, reason: ok ? null : "motion", stats };
+  }
   if (letter === "10") {
     // a twist turns the thumb and brings it back; a shake carries it sideways and back
     const ang = smooth(kept.map((f) => [thumbAngle(f.flat, aspect), 0])).map(([a]) => a);
@@ -157,4 +205,7 @@ export const MOTION_HINTS = Object.freeze({
   J: { shape: "For J, start with an I: only your pinky up, the other fingers curled.", motion: "For J, draw a J in the air with your pinky: down, then curve it round." },
   Z: { shape: "For Z, point with your index finger only; curl the others.", motion: "For Z, draw a Z in the air with your index finger: across, back diagonally, across again." },
   10: { shape: "For 10, make a thumbs-up: curl your fingers, thumb straight up.", motion: "For 10, give your thumbs-up a small twist, side to side." },
+  11: { shape: "For 11, curl your middle finger, ring finger and pinky; only your index finger moves.", motion: "For 11, flick your index finger up from under your thumb, twice." },
+  12: { shape: "For 12, curl your ring finger and pinky; only your index and middle fingers move.", motion: "For 12, flick your index and middle fingers up from under your thumb, twice." },
+  15: { shape: "For 15, start with a 5: all fingers up, thumb out to the side.", motion: "For 15, bend all four fingers down at the knuckles, twice." },
 });

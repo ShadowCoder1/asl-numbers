@@ -314,6 +314,10 @@
 
 /* tutor/letters.js pictureMirrored: shown as it looks on the learner's own mirrored screen. */
 .tutor-picture-flip { transform: scaleX(-1); }
+/* a number that moves: its video in the picture's place, cropped square to the signer and her hand */
+.tutor-video:not([hidden]) { display: block; position: relative; width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: 10px; background: #5d8fb8; }
+/* zoomed a little, so YouTube's title (along the top) and logo (bottom right) mostly fall outside the box */
+.tutor-video iframe { position: absolute; top: -15%; left: 50%; width: 231%; height: 130%; transform: translateX(-50%); border: 0; }
 
 /* ---- the burst: a hold was taken ----------------------------------------- */
 /* A wave off the ring and twelve sparks flying out along their own angles.

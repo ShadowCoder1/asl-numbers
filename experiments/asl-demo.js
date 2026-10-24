@@ -32,7 +32,7 @@
 import { flattenRounded, DECIMALS } from "../tutor/landmarks.js";
 import { loadModel } from "../tutor/verifier.js";
 import { loadOpenFS } from "../tutor/openfs.js";
-import { LETTERS, pictureUrl, DEFAULT_ITEMS, NOUN, NOUN_PLURAL, USES_OPENFS, parseItems, DEFAULT_LOOK } from "../tutor/letters.js";
+import { LETTERS, pictureUrl, videoUrl, DEFAULT_ITEMS, NOUN, NOUN_PLURAL, USES_OPENFS, parseItems, DEFAULT_LOOK } from "../tutor/letters.js";
 import { MOTION_LETTERS } from "../tutor/motion.js";
 import { createEngine, TUTOR_COMMIT_OPTS } from "./asl-tutor/engine.js";
 import { mountTutor } from "./asl-tutor/ui.js";
@@ -72,7 +72,10 @@ const OPENFS_WAIT_MS = 10000;
 export const MOTION_LIVE = Object.freeze({
   J: "Make an I, then draw the J along the gold path.",
   Z: "Point your index finger, then draw the Z along the gold path.",
-  10: "Make a thumbs-up, then give it a small twist, side to side.",
+  10: "Copy the video: make a thumbs-up, then give it a small twist, side to side.",
+  11: "Copy the video: flick your index finger up from under your thumb, twice.",
+  12: "Copy the video: flick your index and middle fingers up from under your thumb, twice.",
+  15: "Copy the video: palm toward you, bend all four fingers down at the knuckles, twice.",
 });
 /* What the line under the letter says while the hand moves, for each look. */
 export const LIVE_TEXT = Object.freeze({
@@ -185,6 +188,9 @@ export const FROM_MEMORY_MOTION = Object.freeze({
   J: "From memory: make an I, then draw a J in the air with your pinky.",
   Z: "From memory: point your index finger and draw a Z in the air.",
   10: "From memory: make a thumbs-up and give it a small twist.",
+  11: "From memory: flick your index finger up from under your thumb, twice.",
+  12: "From memory: flick your index and middle fingers up from under your thumb, twice.",
+  15: "From memory: palm toward you, bend all four fingers at the knuckles, twice.",
 });
 
 let session = null, view = null, debug = null, mountError = null, picker = null, focus = null, meters = null, notesView = null;
@@ -518,7 +524,8 @@ function renderLine(look = session.look) {
   if (session.tutorStatus && (motion || performance.now() - session.tutorStatusAt < TUTOR_LINE_MS)) {
     text = session.tutorStatus; state = "tutor";
   } else if (!session.ghostOn) {
-    text = "Copy the picture, then hold your hand still."; state = "tutor";
+    // a number shown as a video (numbers build): its movement, in words, under it
+    text = motion && videoUrl(session.trial.letter) ? MOTION_LIVE[session.trial.letter] : "Copy the picture, then hold your hand still."; state = "tutor";
   } else if (guidance() === 0) {
     text = motion ? FROM_MEMORY_MOTION[session.trial.letter] : FROM_MEMORY; state = "tutor";
   } else if (motion) {

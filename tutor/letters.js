@@ -6,7 +6,9 @@
  * WHAT IS TAUGHT. ASL's numbers 1-10 as a class counts them (Lifeprint; Handspeak). 1-9 are handshapes held still and
  * graded by this folder's model.json, fitted on 92 Deaf signers' fingerspelled phone numbers (FSboard, Google, CC BY
  * 4.0; research/numbers-2026-10-24/). 10 is a thumbs-up with a small twist, a movement, graded by tutor/motion.js as J
- * and Z are in the letter app.
+ * and Z are in the letter app. After them, three of the numbers that MOVE (the owner, 24 Oct: "add the movement
+ * numbers ... not all ... just a few"): 11 and 12 (fingers flicked up from under the thumb) and 15 (a 5 whose fingers
+ * bend at the knuckles), graded by tutor/motion.js too, and shown as a video instead of a picture.
  *
  * WHICH WAY THE PALM FACES. FSboard's signers show every number palm out, and so do the pictures. Classes often teach
  * 1-5 palm toward yourself, the way you count: the grader takes 1-5 either way (the model was fitted on both), so the
@@ -19,23 +21,26 @@
 
 export const NOUN = "number";
 export const NOUN_PLURAL = "numbers";
-export const LETTERS = Object.freeze(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
-const MOTION_LETTERS = Object.freeze(["10"]);
+export const LETTERS = Object.freeze(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "15"]);
+const MOTION_LETTERS = Object.freeze(["10", "11", "12", "15"]);
 export const STATIC_LETTERS = Object.freeze(LETTERS.filter((l) => !MOTION_LETTERS.includes(l)));
-/* A numbers session practises all ten, in order, unless the link says otherwise (?letters=). */
+/* A numbers session practises all of them, in order, unless the link says otherwise (?letters=). */
 export const DEFAULT_ITEMS = LETTERS;
 /* OpenFS (the letter app's second opinion) reads letters only. */
 export const USES_OPENFS = false;
 
-/** The items in a link's ?letters=: "10" first, then single digits; anything else is ignored. */
+/** The items in a link's ?letters=, separated by commas or spaces ("1,2,10,15"). A run of digits that is itself a
+ * number taught here is that number ("15"); any other run is read a digit at a time, 10 kept whole ("123" is 1, 2, 3).
+ * Anything else is ignored. */
 export function parseItems(raw) {
-  return (String(raw).match(/10|[1-9]/g) ?? []).filter((c) => LETTERS.includes(c));
+  return (String(raw).match(/\d+/g) ?? []).flatMap((run) => (LETTERS.includes(run) ? [run] : run.match(/10|[1-9]/g) ?? []))
+    .filter((c) => LETTERS.includes(c));
 }
 
 // the numbers a learner mixes each one up with (model.json's `confusions`, copied; tests/numbers-set.test.js keeps
 // the two equal): the thumb in or out (2/3, 4/5), the thumb on the next finger (6-9)
 export const CONFUSIONS = Object.freeze({
-  1: "", 2: "3", 3: "2", 4: "5", 5: "4", 6: "789", 7: "689", 8: "679", 9: "678", 10: "",
+  1: "", 2: "3", 3: "2", 4: "5", 5: "4", 6: "789", 7: "689", 8: "679", 9: "678", 10: "", 11: "", 12: "", 15: "",
 });
 
 export const GENERIC_HINTS = Object.freeze({
@@ -62,6 +67,9 @@ const TABLE = {
   8: { motion: false, describe: "Thumb tip on the middle fingertip; index, ring and pinky up.", thumb: "Touch your thumb tip to your middle fingertip.", fingers: "Index, ring and pinky straight; middle finger bent down to your thumb.", orientation: OUT },
   9: { motion: false, describe: "Thumb tip on the index fingertip; middle, ring and pinky up.", thumb: "Touch your thumb tip to your index fingertip.", fingers: "Middle, ring and pinky straight; index finger bent down to your thumb.", orientation: OUT },
   10: { motion: true, describe: "A thumbs-up, given a small twist.", thumb: "Point your thumb straight up.", fingers: "Curl all four fingers into a fist.", orientation: "Thumb up, then twist it side to side." },
+  11: { motion: true, describe: "Index finger flicked up from under your thumb, twice.", thumb: "Hold your index finger down with your thumb, then let it flick up.", fingers: "Middle finger, ring finger and pinky stay curled.", orientation: "Palm toward you, the back of your hand to the camera." },
+  12: { motion: true, describe: "Index and middle fingers flicked up from under your thumb, twice.", thumb: "Hold both fingers down with your thumb, then let them flick up.", fingers: "Ring finger and pinky stay curled.", orientation: "Palm toward you, the back of your hand to the camera." },
+  15: { motion: true, describe: "An open hand, palm toward you; all four fingers bend down at the knuckles, twice.", thumb: "Keep your thumb out to the side.", fingers: "Bend all four fingers together at the knuckles, then straighten them.", orientation: "Palm toward you, the back of your hand to the camera." },
 };
 
 function buildSpec(letter) {
@@ -117,8 +125,8 @@ export const WARM_URL = null;   // no hand render in this build: the tracker war
 /* No glove on the camera: the number's picture beside it, to copy (the owner, 24 Oct: "we do not need the glove
  * pictures ... just want the sign shown like the no-glove version"). ?look=glove still puts the glove on. */
 export const DEFAULT_LOOK = "plain";
-export const HOLD_NOTE = " For 10, give your thumbs-up a small twist.";
-export const SHARE = Object.freeze({ title: "ASL numbers practice", text: "Practice ASL numbers 1 to 10 with your phone's camera." });
+export const HOLD_NOTE = " For 10, 11, 12 and 15, copy the movement in the video instead.";
+export const SHARE = Object.freeze({ title: "ASL numbers practice", text: "Practice ASL numbers 1 to 15 with your phone's camera." });
 
 /* The pictures (assets/numbers/LICENSES.md): Wikimedia Commons' line drawings of 1-9 (CC BY-SA 4.0, credited on the
  * page), and for 10 the letter app's A (public domain), whose handshape it is. All are drawn as the other person sees a
@@ -132,4 +140,15 @@ export function pictureMirrored(letter, hand = "right") {
 }
 export function pictureUrl(letter) {
   return PICTURE_LETTERS.includes(letter) ? `assets/numbers/${letter}.${letter === "10" ? "svg" : "jpg"}` : null;
+}
+
+/* The numbers that move are shown as a video, in place of the picture: Learn How to Sign's (LearnHowToSign.org), each
+ * a few seconds of that one number, signed with the right hand, palm toward the signer as taught. They are embedded
+ * from YouTube (muted, looping), never copied onto the site, so their licence lets us show them; credited on the page.
+ * (ASL Citizen's clips were the first choice; its licence forbids publishing them.) NOT mirrored as the pictures are:
+ * YouTube's title and buttons on top of the video would read backwards. */
+export const VIDEOS = Object.freeze({ 10: "4AsxrhAlxkU", 11: "lBCPdB4oBZ0", 12: "z29X3s8Bmew", 15: "77vJBMRvh38" });
+export function videoUrl(letter) {
+  const id = VIDEOS[letter];
+  return id ? `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&playsinline=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1` : null;
 }

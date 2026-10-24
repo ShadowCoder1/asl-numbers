@@ -23,7 +23,7 @@
  * colorblind readers; the reward flash is a brief additive glow, never a
  * flashing element. */
 
-import { LETTERS, PICTURE_CAPTION, NOUN, pictureMirrored } from "../../tutor/letters.js";
+import { LETTERS, PICTURE_CAPTION, NOUN, pictureMirrored, videoUrl } from "../../tutor/letters.js";
 
 /* The note that has to be on screen the whole time, not behind a link. This
  * tutor grades with a model fitted on posed photographs from public datasets;
@@ -88,6 +88,7 @@ export function mountTutor(el, { letters, hintPolicy, layout = "tutor", hand = "
         <div class="tutor-picture-slot">
           <figure class="tutor-reference" id="tutor-reference" hidden>
             <img class="tutor-picture" id="tutor-picture" alt="" hidden>
+            <div class="tutor-video" id="tutor-video" hidden></div>
             <figcaption class="tutor-caption" id="tutor-caption">${PICTURE_CAPTION}</figcaption>
             <p class="tutor-describe" id="tutor-describe"></p>
             <p class="tutor-mnemonic" id="tutor-mnemonic" hidden></p>
@@ -117,6 +118,7 @@ export function mountTutor(el, { letters, hintPolicy, layout = "tutor", hand = "
     status: $("tutor-status"),
     reference: $("tutor-reference"),
     picture: $("tutor-picture"),
+    video: $("tutor-video"),
     caption: $("tutor-caption"),
     describe: $("tutor-describe"),
     mnemonic: $("tutor-mnemonic"),
@@ -181,9 +183,24 @@ export function mountTutor(el, { letters, hintPolicy, layout = "tutor", hand = "
     // rather than assumed away: the description then does the whole job, and
     // the caption goes with the picture, instead of an empty frame pretending
     // there is something to look at.
-    const hasPicture = showPicture && typeof pictureUrl === "string";
+    // a number that moves is shown moving (tutor/letters.js videoUrl): the video takes the picture's place. Not
+    // mirrored as the pictures are: YouTube's own title and buttons would read backwards.
+    const video = showPicture ? videoUrl(letter) : null;
+    nodes.video.hidden = !video;
+    if (!video) nodes.video.replaceChildren();
+    else if (nodes.video.dataset.src !== video) {
+      const frame = document.createElement("iframe");
+      frame.src = video;
+      frame.title = `How to sign the ${NOUN} ${letter}.`;
+      frame.allow = "autoplay; encrypted-media; picture-in-picture";
+      frame.referrerPolicy = "strict-origin-when-cross-origin";
+      frame.loading = "eager";
+      nodes.video.replaceChildren(frame);
+    }
+    nodes.video.dataset.src = video ?? "";
+    const hasPicture = showPicture && !video && typeof pictureUrl === "string";
     nodes.picture.hidden = !hasPicture;
-    nodes.caption.hidden = !hasPicture;
+    nodes.caption.hidden = !hasPicture && !video;
     if (hasPicture) {
       nodes.picture.src = pictureUrl;
       nodes.picture.alt = `The handshape for the ${NOUN} ${letter}.`;
@@ -205,7 +222,7 @@ export function mountTutor(el, { letters, hintPolicy, layout = "tutor", hand = "
       nodes.label.textContent = showPicture ? `Copy this ${NOUN}` : testLabel ?? (layout === "study" ? `Make this ${NOUN}` : `Sign this ${NOUN}`);
       nodes.feedback.textContent = "";
       nodes.feedback.className = "tutor-feedback";
-      helper = showPicture ? "Copy the picture, then hold your hand still." : testHelper ?? "Make the shape, then hold your hand still.";
+      helper = showPicture && videoUrl(letter) ? "Copy the movement in the video." : showPicture ? "Copy the picture, then hold your hand still." : testHelper ?? "Make the shape, then hold your hand still.";
       decided = false;
       nodes.status.textContent = helper;
       setReference({ showPicture, pictureUrl, describe, mnemonic, letter });
