@@ -113,21 +113,23 @@ export const SET_CONTRAST = Object.freeze({
 /* 2 is a V and 10 a thumbs-up: both set off iOS's camera Reactions (mobile/app.js says how to turn them off). */
 export const REACTION_ITEMS = Object.freeze(["2", "10"]);
 export const WARM_ITEM = "5";
+export const WARM_URL = null;   // no hand render in this build: the tracker warms up on the first camera frame instead
 /* No glove on the camera: the number's picture beside it, to copy (the owner, 24 Oct: "we do not need the glove
  * pictures ... just want the sign shown like the no-glove version"). ?look=glove still puts the glove on. */
 export const DEFAULT_LOOK = "plain";
 export const HOLD_NOTE = " For 10, give your thumbs-up a small twist.";
 export const SHARE = Object.freeze({ title: "ASL numbers practice", text: "Practice ASL numbers 1 to 10 with your phone's camera." });
 
-/* The pictures: the numbers' renders (research/numbers-2026-10-24/gloves/), each a right hand as it looks on the
- * learner's own mirrored screen, so none is drawn from the other person's side. */
+/* The pictures (assets/numbers/LICENSES.md): Wikimedia Commons' line drawings of 1-9 (CC BY-SA 4.0, credited on the
+ * page), and for 10 the letter app's A (public domain), whose handshape it is. All are drawn as the other person sees a
+ * right hand, so all are shown flipped (tutor/letters.js says why). */
 export const PICTURE_LETTERS = LETTERS;
-export const PICTURES_DRAWN_FROM_VIEWER = Object.freeze([]);
+export const PICTURES_DRAWN_FROM_VIEWER = LETTERS;
 export const PICTURE_CAPTION = "How it looks on your screen.";
 export function pictureMirrored(letter, hand = "right") {
   const viewer = PICTURES_DRAWN_FROM_VIEWER.includes(letter);
   return hand === "left" ? !viewer : viewer;
 }
 export function pictureUrl(letter) {
-  return PICTURE_LETTERS.includes(letter) ? `assets/gloves/${letter}.png` : null;
+  return PICTURE_LETTERS.includes(letter) ? `assets/numbers/${letter}.${letter === "10" ? "svg" : "jpg"}` : null;
 }

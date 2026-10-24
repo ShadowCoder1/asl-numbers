@@ -38,7 +38,7 @@ import { SECOND_OPINION } from "../tutor/mix.js";
 import { createTracker } from "../js/core/tracker.js";
 import { MEDIAPIPE } from "../config.js";
 import { runTrialLoop } from "../js/core/trial-loop.js";
-import { pictureUrl, LETTERS, NOUN, NOUN_PLURAL, REACTION_ITEMS, WARM_ITEM, SHARE, DEFAULT_LOOK, HOLD_NOTE } from "../tutor/letters.js";
+import { pictureUrl, LETTERS, NOUN, NOUN_PLURAL, REACTION_ITEMS, WARM_ITEM, SHARE, DEFAULT_LOOK, HOLD_NOTE, WARM_URL } from "../tutor/letters.js";
 import { replayRequest, loadReplay, createReplay } from "../js/core/replay.js";
 import { shapeDistance, DEFAULTS as COMMIT_DEFAULTS, MIN_PALM_EXIT_FACTOR } from "../tutor/commit.js";
 import { flattenRounded, DECIMALS, toPoints } from "../tutor/landmarks.js";
@@ -314,7 +314,8 @@ trackerReady.catch((err) => loadFailed(err));
 async function warmUp(tracker) {
   try {
     const img = new Image();
-    img.src = `assets/gloves/${WARM_ITEM}.png`;
+    if (!WARM_URL) return;
+    img.src = WARM_URL;
     await img.decode();
     const c = document.createElement("canvas");
     c.width = 360; c.height = 480;
