@@ -73,9 +73,9 @@ export const MOTION_LIVE = Object.freeze({
   J: "Make an I, then draw the J along the gold path.",
   Z: "Point your index finger, then draw the Z along the gold path.",
   10: "Copy the video: make a thumbs-up, then give it a small twist, side to side.",
-  11: "Copy the video: flick your index finger up from under your thumb, twice.",
-  12: "Copy the video: flick your index and middle fingers up from under your thumb, twice.",
-  15: "Copy the video: palm toward you, bend all four fingers down at the knuckles, twice.",
+  11: "Copy the video: flick your index finger up from under your thumb, twice, quickly.",
+  12: "Copy the video: flick your index and middle fingers up from under your thumb, twice, quickly.",
+  15: "Copy the video: palm toward you, bend all four fingers down at the knuckles, twice, quickly.",
 });
 /* What the line under the letter says while the hand moves, for each look. */
 export const LIVE_TEXT = Object.freeze({
@@ -188,9 +188,9 @@ export const FROM_MEMORY_MOTION = Object.freeze({
   J: "From memory: make an I, then draw a J in the air with your pinky.",
   Z: "From memory: point your index finger and draw a Z in the air.",
   10: "From memory: make a thumbs-up and give it a small twist.",
-  11: "From memory: flick your index finger up from under your thumb, twice.",
-  12: "From memory: flick your index and middle fingers up from under your thumb, twice.",
-  15: "From memory: palm toward you, bend all four fingers at the knuckles, twice.",
+  11: "From memory: flick your index finger up from under your thumb, twice, quickly.",
+  12: "From memory: flick your index and middle fingers up from under your thumb, twice, quickly.",
+  15: "From memory: palm toward you, bend all four fingers at the knuckles, twice, quickly.",
 });
 
 let session = null, view = null, debug = null, mountError = null, picker = null, focus = null, meters = null, notesView = null;

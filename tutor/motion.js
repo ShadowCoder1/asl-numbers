@@ -38,8 +38,13 @@
  *          one flicking reads up to 1.35, and 1.49 for a moment as the flick goes by); for 15, the thumb out (T10_THUMB).
  *   motion the moving fingers (11 the index, 12 index and middle, 15 all four) go from straight (all of them at least
  *          FLICK_UP) to bent (all of them at most FLICK_DOWN; for 15, three of the four, as the pinky bends least) or
- *          back at least FLICK_FLIPS times: up, down, up, or down, up, down. A finger that only wobbles between the
- *          two (a tracking glitch, a curled finger turned with the hand) never counts.
+ *          back FLICK_FLIPS times in a row: up, down, up, or down, up, down (twice). A finger that only wobbles between the
+ *          two (a tracking glitch, a curled finger turned with the hand) never counts. And QUICKLY (JT, 24 Oct: "it
+ *          required 2 quick movements; i did the two movements in slow succession and it still worked"): each move
+ *          takes at most FLICK_MOVE_MS (from where the fingers last rested, within FLICK_REST of the furthest they
+ *          went, to where they arrive) and comes within FLICK_GAP_MS of the move before; a slow move starts the count
+ *          again. The signer in the videos moves in 30-200 ms (a few up to 0.6 s, between repetitions) and makes the
+ *          next move within 0.84 s; the limits are 2.5 and 1.8 times that, for beginners.
  *          Measured on Learn How to Sign's videos of 11, 12 and 15 (research/numbers-2026-10-24/FLICKS.md): the index
  *          reads 1.1-1.3 under the thumb and 2.0-2.2 flicked up; 12's lower finger 1.3-1.6 and 2.1-2.5; 15's lowest
  *          2.0-2.2 open, its third-lowest 1.35-1.46 bent (seen from the front). A curled index turned with a twisting
@@ -53,11 +58,11 @@ export const MIN_SHAPE_FRAMES = 6;
 export const J_DROP = 0.45, J_HOOK = 0.25;
 export const Z_WIDTH = 0.6, Z_DROP = 0.35, Z_REVERSALS = 2, Z_HYST = 0.15;
 export const T10_THUMB = 0.45, T10_UP_DEG = 60, T10_TWIST_DEG = 18, T10_TWIST_HYST_DEG = 7, T10_SHAKE = 0.3, T10_SHAKE_HYST = 0.1;
-export const FLICK_STILL = 1.5, FLICK_UP = 1.75, FLICK_DOWN = 1.6, FLICK_FLIPS = 2;
+export const FLICK_STILL = 1.5, FLICK_UP = 1.75, FLICK_DOWN = 1.6, FLICK_FLIPS = 3, FLICK_REST = 0.1, FLICK_MOVE_MS = 500, FLICK_GAP_MS = 1500;
 /* The same numbers as one object: the engine takes it as an option, so a
  * replay of recorded trials can try other values (research/prolific-pilot-2026-09-28). */
 export const MOTION_DEFAULTS = Object.freeze({ WINDOW_MS, EXT, CURL, MIN_SHAPE_FRAMES, J_DROP, J_HOOK, Z_WIDTH, Z_DROP, Z_REVERSALS, Z_HYST,
-  T10_THUMB, T10_UP_DEG, T10_TWIST_DEG, T10_TWIST_HYST_DEG, T10_SHAKE, T10_SHAKE_HYST, FLICK_STILL, FLICK_UP, FLICK_DOWN, FLICK_FLIPS });
+  T10_THUMB, T10_UP_DEG, T10_TWIST_DEG, T10_TWIST_HYST_DEG, T10_SHAKE, T10_SHAKE_HYST, FLICK_STILL, FLICK_UP, FLICK_DOWN, FLICK_FLIPS, FLICK_REST, FLICK_MOVE_MS, FLICK_GAP_MS });
 
 const FINGER = { index: [5, 8], middle: [9, 12], ring: [13, 16], pinky: [17, 20] };
 const SHAPE = {
@@ -172,16 +177,31 @@ export function motionVerdict(letter, frames, aspect, p = MOTION_DEFAULTS) {
     return { ok, reason: ok ? null : "motion", stats };
   }
   if (s.flick) {
-    // up and down, over and over: how often the moving fingers go from straight (FLICK_UP) to bent (FLICK_DOWN) or back
+    // up and down, quickly, over and over: the moving fingers go from straight (FLICK_UP) to bent (FLICK_DOWN) or back.
+    // A move is timed from where the fingers last rested (within FLICK_REST of the furthest they went, straight or
+    // bent) to where they arrive; it must take at most FLICK_MOVE_MS and come within FLICK_GAP_MS of the move before.
+    // A slow one starts the count again.
     const track = smooth(kept.map((f) => flickTrack(s, f.flat, aspect)), 3);
-    let state = 0, flips = 0;
-    for (const [up, down] of track) {
-      const now = up >= p.FLICK_UP ? 1 : down <= p.FLICK_DOWN ? -1 : state;
-      if (state && now !== state) flips++;
-      state = now;
-    }
-    Object.assign(stats, { top: +Math.max(...track.map((t) => t[0])).toFixed(3), bottom: +Math.min(...track.map((t) => t[1])).toFixed(3), flips });
-    const ok = flips >= p.FLICK_FLIPS;
+    let state = 0, far = null, restT = 0, flips = 0, run = 0, best = 0, prevFlip = -Infinity, slowest = 0;
+    const moves = [];
+    track.forEach(([up, down], i) => {
+      const t = kept[i].tMs;
+      const now = up >= p.FLICK_UP ? 1 : down <= p.FLICK_DOWN ? -1 : 0;
+      if (now && state && now !== state) {
+        const move = t - restT, quick = move <= p.FLICK_MOVE_MS;
+        flips++; moves.push(Math.round(move)); slowest = Math.max(slowest, move);
+        run = quick && t - prevFlip <= p.FLICK_GAP_MS ? run + 1 : quick ? 1 : 0;
+        best = Math.max(best, run);
+        prevFlip = t; far = null;
+      }
+      if (now) state = now;
+      if (!state) return;
+      const v = state > 0 ? up : down;
+      if (far === null || (state > 0 ? v > far : v < far)) far = v;
+      if (Math.abs(v - far) <= p.FLICK_REST) restT = t;
+    });
+    Object.assign(stats, { top: +Math.max(...track.map((t) => t[0])).toFixed(3), bottom: +Math.min(...track.map((t) => t[1])).toFixed(3), flips, quickRun: best, slowestMoveMs: Math.round(slowest), moves });
+    const ok = best >= p.FLICK_FLIPS;
     return { ok, reason: ok ? null : "motion", stats };
   }
   if (letter === "10") {
@@ -205,7 +225,7 @@ export const MOTION_HINTS = Object.freeze({
   J: { shape: "For J, start with an I: only your pinky up, the other fingers curled.", motion: "For J, draw a J in the air with your pinky: down, then curve it round." },
   Z: { shape: "For Z, point with your index finger only; curl the others.", motion: "For Z, draw a Z in the air with your index finger: across, back diagonally, across again." },
   10: { shape: "For 10, make a thumbs-up: curl your fingers, thumb straight up.", motion: "For 10, give your thumbs-up a small twist, side to side." },
-  11: { shape: "For 11, curl your middle finger, ring finger and pinky; only your index finger moves.", motion: "For 11, flick your index finger up from under your thumb, twice." },
-  12: { shape: "For 12, curl your ring finger and pinky; only your index and middle fingers move.", motion: "For 12, flick your index and middle fingers up from under your thumb, twice." },
-  15: { shape: "For 15, start with a 5: all fingers up, thumb out to the side.", motion: "For 15, bend all four fingers down at the knuckles, twice." },
+  11: { shape: "For 11, curl your middle finger, ring finger and pinky; only your index finger moves.", motion: "For 11, flick your index finger up from under your thumb, twice, quickly." },
+  12: { shape: "For 12, curl your ring finger and pinky; only your index and middle fingers move.", motion: "For 12, flick your index and middle fingers up from under your thumb, twice, quickly." },
+  15: { shape: "For 15, start with a 5: all fingers up, thumb out to the side.", motion: "For 15, bend all four fingers down at the knuckles, twice, quickly." },
 });
