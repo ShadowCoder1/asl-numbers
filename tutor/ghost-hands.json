@@ -1,0 +1,5 @@
+{
+ "schema": "ghost-hands/1",
+ "about": "The numbers build has no ghost hands: its gloves show each number (assets/numbers/gloves/), and with a glove there is no golden finger (experiments/asl-demo.js). Kept so the page loads the same files as the letter build.",
+ "letters": {}
+}

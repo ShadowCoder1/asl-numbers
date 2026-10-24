@@ -1,0 +1,5 @@
+{
+ "about": "The numbers build marks no line drawings: its pictures are the glove renders, placed by assets/numbers/gloves/gloves.json. Kept so the page loads the same files as the letter build.",
+ "width": 500,
+ "letters": {}
+}
